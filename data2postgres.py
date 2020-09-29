@@ -10,18 +10,18 @@
  public | week      | table | postgres
 
            <day> Tables Columns
- index |      timestamp      | customer_no | location | no_locations |              cust_path
--------+---------------------+-------------+----------+--------------+--------------------------------------
-     0 | 2019-09-02 07:03:00 |           1 | da       |            2 | dach
-     1 | 2019-09-02 07:03:00 |           2 | da       |            2 | dach
-     2 | 2019-09-02 07:04:00 |           3 | da       |            2 | dach
+ index |      timestamp      | customer_no | location |      duration       | no_locations |             cust_path
+-------+---------------------+-------------+----------+---------------------+--------------+------------------------------------
+     0 | 2019-09-06 07:00:00 |           1 | da       | 1970-01-01 00:04:00 |            3 | daspch
+     1 | 2019-09-06 07:00:00 |           2 | dr       | 1970-01-01 00:01:00 |            2 | drch
+     2 | 2019-09-06 07:00:00 |           3 | fr       | 1970-01-01 00:03:00 |            4 | frspdach
 
            'week' Table Columns
- index |      timestamp      | customer_no | location | no_locations |              cust_path               |    day
--------+---------------------+-------------+----------+--------------+--------------------------------------+-----------
-     0 | 2019-09-02 07:03:00 |           1 | da       |            2 | dach                                 | monday
-     1 | 2019-09-02 07:03:00 |           2 | da       |            2 | dach                                 | monday
-     2 | 2019-09-02 07:04:00 |           3 | da       |            2 | dach                                 | monday
+ index |      timestamp      | customer_no | location |      duration       | no_locations |              cust_path               |    day
+-------+---------------------+-------------+----------+---------------------+--------------+--------------------------------------+-----------
+     0 | 2019-09-02 07:03:00 |           1 | da       | 1970-01-01 00:02:00 |            2 | dach                                 | monday
+     1 | 2019-09-02 07:03:00 |           2 | da       | 1970-01-01 00:03:00 |            2 | dach                                 | monday
+     2 | 2019-09-02 07:04:00 |           3 | da       | 1970-01-01 00:02:00 |            2 | dach                                 | monday
 
 """
 
@@ -37,10 +37,21 @@ week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 def replace_location_names(location):
     return location[0:2]
 
+def make_neg_val_null(timestamp):
+    if timestamp.value  < 0:
+        return (pd.Timedelta(0))
+    else:
+        return timestamp
+
 week_df = pd.DataFrame()
 for day in week:
     df = pd.read_csv(day+'.csv', sep = ';')
     df['timestamp'] = pd.to_datetime(df['timestamp'])
+    duration = df.sort_values(by=['customer_no', 'timestamp'])
+    duration['duration'] = df.sort_values(by=['customer_no', 'timestamp'])['timestamp'].diff().shift(-1)
+    duration['duration'] = duration['duration'].apply(make_neg_val_null)
+    duration = duration.sort_index()
+    df['duration'] = pd.to_datetime(duration['duration'])
     df['location'] = df['location'].apply(replace_location_names)
     loc_count_per_cust = pd.DataFrame(df.groupby('customer_no')['location'].count())
     cust_loc_path = pd.DataFrame(df.groupby('customer_no')['location'].sum())
