@@ -185,13 +185,17 @@ class Customer():
         state = random.choices(stations[1:], weights=[0.287, 0.153, 0.377, 0.181])[0]
         result = {entry.strftime("%X"): state}
         timestamp = entry
+        confid = 1
         while state != 'checkout':
             timestamp = timestamp + pd.Timedelta(seconds=60) ## eine Minute addieren
             weights = P[state]
             state = random.choices(stations, weights=weights)[0]
+            index = stations.index(state)
+            confid = (confid + np.abs((weights[index]-0.5)*2))/2
             result[timestamp.strftime("%X")] = state
         result[(timestamp + pd.Timedelta(seconds=60)).strftime("%X")] = 'checkout'
         result[(timestamp + pd.Timedelta(seconds=120)).strftime("%X")] = 'checkout'
+        self.conf = confid
         return result
 
         # self.path = {'11:01:00': 'fruits',
@@ -208,7 +212,7 @@ class Supermarket():
     def __init__(self, simulation_from, simulation_to, no_of_customer):
         self.load_cust_images()
 
-        self.im = Image.open(cwd+'/week_08/supermarket.png')
+        self.im = Image.open(cwd+'/week_08/supermarket.jpg')
         self.shelves = Shelves()
         self.goods = Goods()
         self.customers = []
@@ -216,6 +220,14 @@ class Supermarket():
             self.customers.append(Customer(simulation_from, simulation_to))
 
         self.fill_shelves()
+
+        self.revenue_matrix = {"dairy"  : [5, 0],
+                          "drinks" : [6, 0],
+                          "fruits" : [4, 0],
+                          "spices" : [3, 0],
+                          "checkout": [0, 0]}
+
+        self.turnover = 0
     
     def fill_shelves(self):
         for i in self.shelves.get_locations():
@@ -238,10 +250,10 @@ class Supermarket():
             cust3[:,:,1] = 0
             cust3[:,:,2] = 0        
             red_cust_im = Image.fromarray(cust3)
-            self.cust_im = [yell_cust_im, red_cust_im, green_cust_im]
+            self.cust_im = [green_cust_im, yell_cust_im, red_cust_im]
 
     def reset_cust_spots(self):
-        self.cust_spots = {'drinks': {(3,3): 0, (3,4): 0, (3,5): 0, (3,6): 0, (3,7): 0,
+        self.cust_spots = {'drinks': {(3,3):0 , (3,4): 0, (3,5): 0, (3,6): 0, (3,7): 0,
                                         (4,3): 0, (4,4): 0, (4,5): 0, (4,6): 0, (4,7): 0},
                             'dairy':  {(7,3): 0, (7,4): 0, (7,5): 0, (7,6): 0, (7,7): 0,
                                         (8,3): 0, (8,4): 0, (8,5): 0, (8,6): 0, (8,7): 0},
@@ -255,13 +267,26 @@ class Supermarket():
     def move_customers(self, timestamp):
         self.reset_cust_spots()
         base_map = self.im.copy()
+        conf = 0
         for cust in self.customers:
             if timestamp.strftime("%X") in cust.path.keys():
                 #print(timestamp.strftime("%X"), cust.path[timestamp.strftime("%X")])
+                location = cust.path[timestamp.strftime("%X")]
                 base_map = self.set_cust_im_to_map(base_map, cust.path[timestamp.strftime("%X")])
+                self.turnover += self.revenue_matrix[location][0]
+                self.revenue_matrix[location][1] += self.revenue_matrix[location][0]
+            conf += cust.conf
+        conf = conf / len(self.customers)
         draw = ImageDraw.Draw(base_map)
         font = ImageFont.truetype("arial.ttf", 28, encoding="unic")
-        draw.text((0, 0),timestamp.strftime("%X"),(0,0,0), font=font)
+        draw.text((455, 490),timestamp.strftime("%X"),(255,255,255), font=font)
+        draw.text((10, 390),'Confidence Score: '+str(np.round(conf,3)),(0,255,0), font=font)
+        draw.text((10, 440),'Total Revenue: '+str(np.round(self.turnover,3)),(255,255,255), font=font)
+        font = ImageFont.truetype("arial.ttf", 20, encoding="unic")
+        draw.text((10, 480),'Dairy: '+str(np.round(self.revenue_matrix['dairy'][1],3)),(255,255,255), font=font)
+        draw.text((100, 480),'Drinks: '+str(np.round(self.revenue_matrix['drinks'][1],3)),(255,255,255), font=font)
+        draw.text((200, 480),'Fruits: '+str(np.round(self.revenue_matrix['fruits'][1],3)),(255,255,255), font=font)
+        draw.text((290, 480),'Spices: '+str(np.round(self.revenue_matrix['spices'][1],3)),(255,255,255), font=font)
         draw = None
         return base_map
 
@@ -281,8 +306,8 @@ class Supermarket():
     
 if __name__ == '__main__':
 
-    simulation_from = "2020-09-30 11:00"
-    simulation_to   = "2020-09-30 11:30"
+    simulation_from = "2020-10-05 11:00"
+    simulation_to   = "2020-10-05 11:30"
     no_of_customer = 50
 
     market = Supermarket(simulation_from, simulation_to, no_of_customer)
@@ -294,9 +319,10 @@ if __name__ == '__main__':
         frames.append(cust_im)
         #cust_im.save(cwd+'/week_08/pics/'+i.strftime("%X").replace(':','_')+'.png')
 
-    frames[0].save(cwd+'/week_08/pics/out.gif', format='GIF', save_all=True, append_images=frames[1:], duration=150, loop=1)
+    frames[0].save(cwd+'/week_08/pics/out.gif', format='GIF', save_all=True, append_images=frames[1:], duration=650, loop=0)
 
-
+    for cust in market.customers:
+        print(cust.conf)
 
 
 
