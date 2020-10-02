@@ -283,10 +283,10 @@ class Supermarket():
         draw.text((10, 390),'Confidence Score: '+str(np.round(conf,3)),(0,255,0), font=font)
         draw.text((10, 440),'Total Revenue: '+str(np.round(self.turnover,3)),(255,255,255), font=font)
         font = ImageFont.truetype("arial.ttf", 20, encoding="unic")
-        draw.text((10, 480),'Dairy: '+str(np.round(self.revenue_matrix['dairy'][1],3)),(255,255,255), font=font)
-        draw.text((100, 480),'Drinks: '+str(np.round(self.revenue_matrix['drinks'][1],3)),(255,255,255), font=font)
-        draw.text((200, 480),'Fruits: '+str(np.round(self.revenue_matrix['fruits'][1],3)),(255,255,255), font=font)
-        draw.text((290, 480),'Spices: '+str(np.round(self.revenue_matrix['spices'][1],3)),(255,255,255), font=font)
+        draw.text((120, 480),'Dairy: '+str(np.round(self.revenue_matrix['dairy'][1],3)),(255,255,255), font=font)
+        draw.text((10, 480),'Drinks: '+str(np.round(self.revenue_matrix['drinks'][1],3)),(255,255,255), font=font)
+        draw.text((330, 480),'Fruits: '+str(np.round(self.revenue_matrix['fruits'][1],3)),(255,255,255), font=font)
+        draw.text((220, 480),'Spices: '+str(np.round(self.revenue_matrix['spices'][1],3)),(255,255,255), font=font)
         draw = None
         return base_map
 
