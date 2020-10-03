@@ -1,1 +1,4 @@
-# customer_simulation
+# Supermarket Customer Simulation
+
+Markov-Chain based simulation, that shows customer movement in a schematic supermarket.
+
